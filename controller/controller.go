@@ -6,6 +6,7 @@ import (
 	"image/color"
 	"image/png"
 	"net/http"
+	"runtime"
 )
 
 func HomePage(w http.ResponseWriter, r *http.Request) {
@@ -14,7 +15,11 @@ func HomePage(w http.ResponseWriter, r *http.Request) {
 		name = "stranger"
 	}
 
-	fmt.Fprintf(w, "Hello, %s", name)
+	fmt.Fprintf(w, "Hello, %s\n", name)
+	fmt.Fprintf(w, "OS: %s\n", runtime.GOOS)
+	fmt.Fprintf(w, "Max Process: %d\n", runtime.GOMAXPROCS(0))
+	fmt.Fprintf(w, "Your IP is: %s\n", r.RemoteAddr)
+	fmt.Fprintf(w, "Forwarded for: %s\n", r.Header.Get("X-FORWARDED-FOR"))
 }
 
 func RawImage(w http.ResponseWriter, r *http.Request) {
