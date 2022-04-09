@@ -63,7 +63,7 @@ func RawImage(w http.ResponseWriter, r *http.Request) {
 
 	if len(binPath) == 0 {
 		if runtime.GOOS == "linux" {
-			binPath = "./bin/friendly-pancake"
+			binPath = "./bin/wkhtmltoimage"
 		} else {
 			binPath = "C:\\Users\\Lykoi\\Desktop\\html2image-master\\wkhtmltopdf\\bin\\wkhtmltoimage.exe"
 		}
