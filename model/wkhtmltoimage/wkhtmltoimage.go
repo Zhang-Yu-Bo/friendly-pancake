@@ -1,4 +1,5 @@
 // ref: https://github.com/jujusharp/html2image
+// 0.12.5 ubuntu 18.04
 // Package wkhtmltoimage provides a simple wrapper around wkhtmltoimage (http://wkhtmltopdf.org/) binary.
 package wkhtmltoimage
 
