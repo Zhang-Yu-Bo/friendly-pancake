@@ -62,7 +62,7 @@ func RawImage(w http.ResponseWriter, r *http.Request) {
 	binPath := "C:\\Users\\Lykoi\\Desktop\\html2image-master\\wkhtmltopdf\\bin\\wkhtmltoimage.exe"
 
 	if runtime.GOOS == "linux" {
-		binPath = "~/bin/wkhtmltoimage"
+		binPath = "./wkhtmltoimage"
 	}
 
 	html := `
