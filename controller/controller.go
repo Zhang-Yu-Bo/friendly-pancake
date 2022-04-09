@@ -115,7 +115,7 @@ func RawImage(w http.ResponseWriter, r *http.Request) {
                 <span class='button' style='background-color: #ffbd2e;'></span>
                 <span class='button' style='background-color: #27c93f;'></span>
             </div>
-            <h1>My First CSS Example</h1>
+            <h1>Hi mom</h1>
             <p>This is a paragraph.</p>
         </div>
     </body>
