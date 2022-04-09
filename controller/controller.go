@@ -59,10 +59,14 @@ func RawImage(w http.ResponseWriter, r *http.Request) {
 	// png.Encode(w, img)
 	// // fmt.Fprintf(w, "%s", fileName)
 
-	binPath := "C:\\Users\\Lykoi\\Desktop\\html2image-master\\wkhtmltopdf\\bin\\wkhtmltoimage.exe"
+	binPath := r.URL.Query().Get("bin_path")
 
-	if runtime.GOOS == "linux" {
-		binPath = "./wkhtmltoimage"
+	if len(binPath) == 0 {
+		if runtime.GOOS == "linux" {
+			binPath = "./bin/friendly-pancake"
+		} else {
+			binPath = "C:\\Users\\Lykoi\\Desktop\\html2image-master\\wkhtmltopdf\\bin\\wkhtmltoimage.exe"
+		}
 	}
 
 	html := `
