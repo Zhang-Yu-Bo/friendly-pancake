@@ -8,6 +8,7 @@ import (
 )
 
 type CodePage struct {
+	FontsCssUrl     string
 	CssUrl          string
 	Code            string
 	BackgroundColor string

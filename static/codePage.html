@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <meta http-equiv="content-type" content="text/html;charset=utf-8">
+        <meta http-equiv="content-type" content="text/html;charset=utf-8" />
         <!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css"> -->
         <!-- <link rel="stylesheet" href="https://drive.google.com/uc?export=download&id=1qm6X268Wz0sW9fV2euY0mIN95CgA7HhU"> -->
-        <link rel="stylesheet" href={{ CssUrl }} >
+        <link rel="stylesheet" href={{ FontsCssUrl }} />
+        <link rel="stylesheet" href={{ CssUrl }} />
         <style>
             body {
                 background-color: {{ BackgroundColor }};
@@ -41,10 +42,15 @@
                 /* padding: 18px; */
             }
             /* https://www.html.cn/archives/2422 */
-            /* pre {
+            code, pre {
                 white-space: pre-wrap;
                 word-wrap: break-word;
-            } */
+                font-family: JetBrainsMono,JfOpenHuninn,Consolas,monospace;
+                line-height:1.5;
+                -moz-tab-size:4;
+                -o-tab-size:4;
+                tab-size:4;
+            }
         </style>
     </head>
     <body>
@@ -55,7 +61,7 @@
                 <span class='button' style='background-color: #27c93f;'></span>
             </div>
             <div class="code-content">
-            <pre><code class="language-">{{ Code }}</code></pre>
+            <pre><code>{{ Code }}</code></pre>
             </div>
         </div>
     </body>

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/Zhang-Yu-Bo/friendly-pancake/model/templatePage"
+	"github.com/Zhang-Yu-Bo/friendly-pancake/model/utility"
 	wk "github.com/Zhang-Yu-Bo/friendly-pancake/model/wkhtmltoimage"
 )
 
@@ -70,13 +71,9 @@ func RawImage(w http.ResponseWriter, r *http.Request) {
 		fontSize = "18px"
 	}
 
-	cssUrl := "http://localhost/static/prism.css"
-	if runtime.GOOS == "linux" {
-		cssUrl = "https://friendly-pancake.herokuapp.com/static/prism.css"
-	}
-
 	data := templatePage.CodePage{
-		CssUrl:          cssUrl,
+		FontsCssUrl:     utility.Hostname() + "/static/fonts/fontsFace.css",
+		CssUrl:          utility.Hostname() + "/static/prism.css",
 		Code:            strings.ReplaceAll(tempCode, "\t", "    "),
 		BackgroundColor: backgroundColor,
 		ContainerColor:  containerColor,
@@ -125,13 +122,9 @@ func TestPage(w http.ResponseWriter, r *http.Request) {
 		fontSize = "18px"
 	}
 
-	cssUrl := "http://localhost/static/prism.css"
-	if runtime.GOOS == "linux" {
-		cssUrl = "https://friendly-pancake.herokuapp.com/static/prism.css"
-	}
-
 	data := templatePage.CodePage{
-		CssUrl:          cssUrl,
+		FontsCssUrl:     utility.Hostname() + "/static/fonts/fontsFace.css",
+		CssUrl:          utility.Hostname() + "/static/prism.css",
 		Code:            strings.ReplaceAll(tempCode, "\t", "    "),
 		BackgroundColor: backgroundColor,
 		ContainerColor:  containerColor,

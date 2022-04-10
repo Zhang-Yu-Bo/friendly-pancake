@@ -1,0 +1,11 @@
+@font-face {
+    font-family: JetBrainsMono;
+    src: url(/static/fonts/JetBrainsMono-Regular.ttf);
+    font-variant: normal;
+}
+
+@font-face {
+    font-family: JfOpenHuninn;
+    src: url(/static/fonts/jf-openhuninn-1.1.ttf),
+    local("jf open 粉圓 1.1");
+}
