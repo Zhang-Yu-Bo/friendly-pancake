@@ -2,12 +2,10 @@ package controller
 
 import (
 	"fmt"
-	// "image"
-	// "image/color"
-	// "image/png"
 	"net/http"
 	"runtime"
 
+	"github.com/Zhang-Yu-Bo/friendly-pancake/model/templatePage"
 	wk "github.com/Zhang-Yu-Bo/friendly-pancake/model/wkhtmltoimage"
 )
 
@@ -25,39 +23,6 @@ func HomePage(w http.ResponseWriter, r *http.Request) {
 }
 
 func RawImage(w http.ResponseWriter, r *http.Request) {
-
-	// fileName := r.URL.Query().Get("file_name")
-
-	// if len(fileName) == 0 {
-	// 	fileName = "image.png"
-	// }
-
-	// width := 200
-	// height := 100
-
-	// upLeft := image.Point{0, 0}
-	// lowRight := image.Point{width, height}
-
-	// img := image.NewRGBA(image.Rectangle{upLeft, lowRight})
-
-	// // Colors are defined by Red, Green, Blue, Alpha uint8 values.
-	// cyan := color.RGBA{100, 200, 200, 0xff}
-
-	// // Set color for each pixel.
-	// for x := 0; x < width; x++ {
-	// 	for y := 0; y < height; y++ {
-	// 		switch {
-	// 		case x < width/2 && y < height/2: // upper left quadrant
-	// 			img.Set(x, y, cyan)
-	// 		case x >= width/2 && y >= height/2: // lower right quadrant
-	// 			img.Set(x, y, color.White)
-	// 		default:
-	// 			// Use zero value.
-	// 		}
-	// 	}
-	// }
-	// png.Encode(w, img)
-	// // fmt.Fprintf(w, "%s", fileName)
 
 	binPath := r.URL.Query().Get("bin_path")
 
@@ -138,4 +103,33 @@ func RawImage(w http.ResponseWriter, r *http.Request) {
 		w.Write(out)
 	}
 
+}
+
+func TestPage(w http.ResponseWriter, r *http.Request) {
+
+	if len(templatePage.Page) == 0 {
+		fmt.Fprintln(w, "Code template is nil")
+		return
+	}
+
+	data := templatePage.CodePage{
+		Code: `<span class="token macro property"><span class="token directive-hash">#</span><span class="token directive keyword">include</span> <span class="token string">&lt;iostream></span></span>
+<span class="token macro property"><span class="token directive-hash">#</span><span class="token directive keyword">include</span><span class="token string">&lt;vector></span></span>
+
+<span class="token keyword">int</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+	<span class="token comment">// 這是註解</span>
+	std<span class="token double-colon punctuation">::</span>vector<span class="token operator">&lt;</span><span class="token keyword">int</span><span class="token operator">></span> arr <span class="token operator">=</span> std<span class="token double-colon punctuation">::</span><span class="token generic-function"><span class="token function">vector</span><span class="token generic class-name"><span class="token operator">&lt;</span><span class="token keyword">int</span><span class="token operator">></span></span></span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">10</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+	<span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> <span class="token number">10</span><span class="token punctuation">;</span> i<span class="token operator">++</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+		arr<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">=</span> i <span class="token operator">*</span> <span class="token number">10</span> <span class="token operator">+</span> <span class="token number">2</span><span class="token punctuation">;</span>
+	<span class="token punctuation">}</span>
+	std<span class="token double-colon punctuation">::</span>cout <span class="token operator">&lt;&lt;</span> <span class="token string">"Hello World 你好世界"</span> <span class="token operator">&lt;&lt;</span> std<span class="token double-colon punctuation">::</span>endl<span class="token punctuation">;</span>
+	<span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>`,
+		BackgroundColor: "#2885D3",
+		ContainerColor:  "#151718",
+		ContainerWidth:  "700px",
+		FontSize:        "18px",
+	}
+
+	w.Write([]byte(templatePage.Parse(data)))
 }
