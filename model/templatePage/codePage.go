@@ -1,7 +1,11 @@
 package templatePage
 
 import (
+	"encoding/base64"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"reflect"
 	"regexp"
@@ -102,4 +106,67 @@ func (data *CodePage) Validtion() {
 	data.FontSize = strconv.Itoa(utility.Clamp(utility.PixelToInt(data.FontSize), 5, 36)) + "px"
 
 	data.Code = strings.ReplaceAll(data.Code, "\t", "    ")
+}
+
+func (data *CodePage) GetDataFromURL(r *http.Request) (int, error) {
+
+	codeFileName := utility.GetStringFromURL(r, "code", "")
+	if codeFileName == "" {
+		return http.StatusBadRequest, errors.New("there is no parameter [code]")
+	}
+	codeFilePath := "static/catch/code/" + codeFileName + ".json"
+	if !utility.IsFileOrDirExist(codeFilePath) {
+		return http.StatusBadRequest, errors.New("there is no code file")
+	}
+
+	var err error
+	var codeFile *os.File
+	if codeFile, err = os.Open(codeFilePath); err != nil {
+		return http.StatusInternalServerError, err
+	}
+	defer utility.CloseFile(codeFile)
+
+	mCode := map[string]string{}
+	if err = json.NewDecoder(codeFile).Decode(&mCode); err != nil {
+		return http.StatusInternalServerError, err
+	}
+	codeContent := mCode["code"]
+	if codeContent == "" {
+		codeContent = utility.DefaultCode
+	}
+
+	var codeContentBytes []byte
+	if codeContentBytes, err = base64.StdEncoding.DecodeString(codeContent); err != nil {
+		return http.StatusInternalServerError, err
+	}
+	codeContent = string(codeContentBytes)
+
+	backgroundColor := utility.GetStringFromURL(r, "backgroundColor", utility.BackgroundColor)
+	containerColor := utility.GetStringFromURL(r, "containerColor", utility.ContainerColor)
+	containerWidth := utility.GetStringFromURL(r, "containerWidth", utility.ContainerWidth)
+	fontSize := utility.GetStringFromURL(r, "fontSize", utility.FontSize)
+	cssStyle := utility.GetStringFromURL(r, "cssStyle", utility.DefaultCssStyle)
+
+	data.FontsCssUrl = utility.FontsStaticUrl() + utility.DefaultFontStyle + ".css"
+	data.CssUrl = utility.CssStaticUrl() + cssStyle + ".css"
+	data.Code = codeContent
+	data.BackgroundColor = backgroundColor
+	data.ContainerColor = containerColor
+	data.ContainerWidth = containerWidth
+	data.FontSize = fontSize
+
+	return http.StatusOK, nil
+}
+
+func ShowMessage(message string) string {
+	message = strings.ReplaceAll(message, "\t", "    ")
+	statments := strings.Split(message, "\n")
+	for i := range statments {
+		statments[i] = `<span class="token string">` + statments[i] + `</span>`
+	}
+	data := CodePage{
+		Code: strings.Join(statments, "\n"),
+	}
+	data.Validtion()
+	return Parse(data)
 }

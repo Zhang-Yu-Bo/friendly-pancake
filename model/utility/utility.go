@@ -94,27 +94,11 @@ func PixelToInt(val string) int {
 	return valInt
 }
 
-func OpenPngAsImage(filePath string) (image.Image, error) {
-	var err error
-	var imgFile *os.File
-	var mImg image.Image
-
+func OpenPngAsByte(filePath string) ([]byte, error) {
 	if !IsFileOrDirExist(filePath) {
 		return nil, errors.New(filePath + " does not exist.")
 	}
-
-	defer func() {
-		imgFile.Close()
-		fmt.Println(filePath + " is closed")
-	}()
-
-	if imgFile, err = os.Open(filePath); err != nil {
-		return nil, err
-	}
-	if mImg, err = png.Decode(imgFile); err != nil {
-		return nil, err
-	}
-	return mImg, nil
+	return os.ReadFile(filePath)
 }
 
 func SaveBytesAsPng(filePath string, data []byte) error {
@@ -123,14 +107,11 @@ func SaveBytesAsPng(filePath string, data []byte) error {
 	var imgFile *os.File
 	var mImg image.Image
 
-	defer func() {
-		imgFile.Close()
-		fmt.Println(filePath + " is closed")
-	}()
-
 	if imgFile, err = CreateFile(filePath); err != nil {
 		return err
 	}
+	defer CloseFile(imgFile)
+
 	if mImg, err = png.Decode(bytes.NewReader(data)); err != nil {
 		return err
 	}
@@ -138,4 +119,12 @@ func SaveBytesAsPng(filePath string, data []byte) error {
 		return err
 	}
 	return nil
+}
+
+func CloseFile(mFile *os.File) {
+	if err := mFile.Close(); err != nil {
+		InternalErrorHandler(err)
+	} else {
+		fmt.Println(mFile.Name() + " is closed.")
+	}
 }
