@@ -19,8 +19,10 @@ func NewRouter() *mux.Router {
 	)
 
 	mRouter.HandleFunc("/", controller.HomePage).Methods("GET")
-	mRouter.HandleFunc("/raw/image", controller.RawImage).Methods("GET")
+	mRouter.HandleFunc("/raw/code/image", controller.ShowRawImage).Methods("GET")
 	mRouter.HandleFunc("/test", controller.TestPage).Methods("GET")
+
+	mRouter.HandleFunc("/code", controller.UploadCode).Methods("POST")
 
 	return mRouter
 }

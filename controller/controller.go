@@ -1,28 +1,19 @@
 package controller
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"image"
+	"image/png"
 	"net/http"
+	"os"
 	"runtime"
-	"strings"
 
 	"github.com/Zhang-Yu-Bo/friendly-pancake/model/templatePage"
 	"github.com/Zhang-Yu-Bo/friendly-pancake/model/utility"
 	wk "github.com/Zhang-Yu-Bo/friendly-pancake/model/wkhtmltoimage"
 )
-
-var tempCode = `<span class="token macro property"><span class="token directive-hash">#</span><span class="token directive keyword">include</span> <span class="token string">&lt;iostream></span></span>
-<span class="token macro property"><span class="token directive-hash">#</span><span class="token directive keyword">include</span><span class="token string">&lt;vector></span></span>
-
-<span class="token keyword">int</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-	<span class="token comment">// 這是註解</span>
-	std<span class="token double-colon punctuation">::</span>vector<span class="token operator">&lt;</span><span class="token keyword">int</span><span class="token operator">></span> arr <span class="token operator">=</span> std<span class="token double-colon punctuation">::</span><span class="token generic-function"><span class="token function">vector</span><span class="token generic class-name"><span class="token operator">&lt;</span><span class="token keyword">int</span><span class="token operator">></span></span></span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">10</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-	<span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;=</span> <span class="token number">10</span><span class="token punctuation">;</span> i<span class="token operator">++</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-		arr<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">=</span> i <span class="token operator">*</span> <span class="token number">10</span> <span class="token operator">+</span> <span class="token number">2</span><span class="token punctuation">;</span>
-	<span class="token punctuation">}</span>
-	std<span class="token double-colon punctuation">::</span>cout <span class="token operator">&lt;&lt;</span> <span class="token string">"Hello World 你好世界"</span> <span class="token operator">&lt;&lt;</span> std<span class="token double-colon punctuation">::</span>endl<span class="token punctuation">;</span>
-	<span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
-<span class="token punctuation">}</span>`
 
 func HomePage(w http.ResponseWriter, r *http.Request) {
 	name := r.URL.Query().Get("name")
@@ -37,63 +28,102 @@ func HomePage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Forwarded for: %s\n", r.Header.Get("X-FORWARDED-FOR"))
 }
 
-func RawImage(w http.ResponseWriter, r *http.Request) {
-
-	binPath := r.URL.Query().Get("binPath")
-
-	if len(binPath) == 0 {
-		if runtime.GOOS == "linux" {
-			binPath = "./bin/wkhtmltoimage"
-		} else {
-			binPath = "C:\\Users\\Lykoi\\Desktop\\html2image-master\\wkhtmltopdf\\bin\\wkhtmltoimage.exe"
-		}
-	}
+func ShowRawImage(w http.ResponseWriter, r *http.Request) {
 
 	if len(templatePage.Page) == 0 {
 		fmt.Fprintln(w, "Code template is nil")
 		return
 	}
 
-	backgroundColor := r.URL.Query().Get("backgroundColor")
-	if backgroundColor == "" {
-		backgroundColor = "#2885D3"
+	codeFileName := utility.GetStringFromURL(r, "code", "")
+	if codeFileName == "" {
+		fmt.Fprintln(w, "There is no parameter [code]")
+		return
 	}
-	containerColor := r.URL.Query().Get("containerColor")
-	if containerColor == "" {
-		containerColor = "#151718"
-	}
-	containerWidth := r.URL.Query().Get("containerWidth")
-	if containerWidth == "" {
-		containerWidth = "700px"
-	}
-	fontSize := r.URL.Query().Get("fontSize")
-	if fontSize == "" {
-		fontSize = "18px"
+	codeFilePath := "static/catch/code/" + codeFileName + ".json"
+	if !utility.IsFileOrDirExist(codeFilePath) {
+		fmt.Fprintln(w, "There is no code file")
+		return
 	}
 
+	var codeFile *os.File
+	var err error
+	defer func() {
+		codeFile.Close()
+	}()
+	if codeFile, err = os.Open(codeFilePath); err != nil {
+		fmt.Fprintf(w, "%s\n", err.Error())
+		return
+	}
+
+	mCode := map[string]string{}
+	if err = json.NewDecoder(codeFile).Decode(&mCode); err != nil {
+		fmt.Fprintf(w, "%s\n", err.Error())
+		return
+	}
+	codeContent := mCode["code"]
+	if codeContent == "" {
+		codeContent = utility.DefaultCode
+	}
+
+	var tempByte []byte
+	if tempByte, err = base64.StdEncoding.DecodeString(codeContent); err != nil {
+		fmt.Fprintf(w, "%s\n", err.Error())
+		return
+	}
+	codeContent = string(tempByte)
+
+	backgroundColor := utility.GetStringFromURL(r, "backgroundColor", utility.BackgroundColor)
+	containerColor := utility.GetStringFromURL(r, "containerColor", utility.ContainerColor)
+	containerWidth := utility.GetStringFromURL(r, "containerWidth", utility.ContainerWidth)
+	fontSize := utility.GetStringFromURL(r, "fontSize", utility.FontSize)
+	cssStyle := utility.GetStringFromURL(r, "cssStyle", utility.DefaultCssStyle)
+
 	data := templatePage.CodePage{
-		FontsCssUrl:     utility.Hostname() + "/static/fonts/fontsFace.css",
-		CssUrl:          utility.Hostname() + "/static/prism.css",
-		Code:            strings.ReplaceAll(tempCode, "\t", "    "),
+		FontsCssUrl:     utility.FontsStaticUrl() + utility.DefaultFontStyle + ".css",
+		CssUrl:          utility.CssStaticUrl() + cssStyle + ".css",
+		Code:            codeContent,
 		BackgroundColor: backgroundColor,
 		ContainerColor:  containerColor,
 		ContainerWidth:  containerWidth,
 		FontSize:        fontSize,
 	}
 
+	data.Validtion()
+
+	imgFileName := utility.HashBySha256(data.String())
+	imgFilePath := "static/catch/img/" + imgFileName + ".png"
+	if utility.IsFileOrDirExist(imgFilePath) {
+		var err error
+		var mImg image.Image
+		if mImg, err = utility.OpenPngAsImage(imgFilePath); err != nil {
+			fmt.Fprintf(w, "%s\n", err.Error())
+			return
+		}
+		if err = png.Encode(w, mImg); err != nil {
+			fmt.Fprintf(w, "%s\n", err.Error())
+			return
+		}
+		return
+	}
+
 	html := templatePage.Parse(data)
 
 	c := wk.ImageOptions{
-		BinaryPath: binPath,
+		BinaryPath: utility.BinPath(),
 		Input:      "-",
 		HTML:       html,
 		Format:     "png",
+		Width:      utility.PixelToInt(containerWidth) + 50,
 	}
 
 	if out, err := wk.GenerateImage(&c); err != nil {
 		fmt.Fprintf(w, "Error: %s\n", err.Error())
 	} else {
 		w.Write(out)
+		if err = utility.SaveBytesAsPng(imgFilePath, out); err != nil {
+			fmt.Fprintf(w, "%s\n", err.Error())
+		}
 	}
 
 }
@@ -105,32 +135,106 @@ func TestPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	backgroundColor := r.URL.Query().Get("backgroundColor")
-	if backgroundColor == "" {
-		backgroundColor = "#2885D3"
+	codeFileName := utility.GetStringFromURL(r, "code", "")
+	if codeFileName == "" {
+		fmt.Fprintln(w, "There is no parameter [code]")
+		return
 	}
-	containerColor := r.URL.Query().Get("containerColor")
-	if containerColor == "" {
-		containerColor = "#151718"
-	}
-	containerWidth := r.URL.Query().Get("containerWidth")
-	if containerWidth == "" {
-		containerWidth = "700px"
-	}
-	fontSize := r.URL.Query().Get("fontSize")
-	if fontSize == "" {
-		fontSize = "18px"
+	codeFilePath := "static/catch/code/" + codeFileName + ".json"
+	if !utility.IsFileOrDirExist(codeFilePath) {
+		fmt.Fprintln(w, "There is no code file")
+		return
 	}
 
+	var codeFile *os.File
+	var err error
+	defer func() {
+		codeFile.Close()
+	}()
+	if codeFile, err = os.Open(codeFilePath); err != nil {
+		fmt.Fprintf(w, "%s\n", err.Error())
+		return
+	}
+
+	mCode := map[string]string{}
+	if err = json.NewDecoder(codeFile).Decode(&mCode); err != nil {
+		fmt.Fprintf(w, "%s\n", err.Error())
+		return
+	}
+	codeContent := mCode["code"]
+	if codeContent == "" {
+		codeContent = utility.DefaultCode
+	}
+
+	var tempByte []byte
+	if tempByte, err = base64.StdEncoding.DecodeString(codeContent); err != nil {
+		fmt.Fprintf(w, "%s\n", err.Error())
+		return
+	}
+	codeContent = string(tempByte)
+
+	backgroundColor := utility.GetStringFromURL(r, "backgroundColor", utility.BackgroundColor)
+	containerColor := utility.GetStringFromURL(r, "containerColor", utility.ContainerColor)
+	containerWidth := utility.GetStringFromURL(r, "containerWidth", utility.ContainerWidth)
+	fontSize := utility.GetStringFromURL(r, "fontSize", utility.FontSize)
+	cssStyle := utility.GetStringFromURL(r, "cssStyle", utility.DefaultCssStyle)
+
 	data := templatePage.CodePage{
-		FontsCssUrl:     utility.Hostname() + "/static/fonts/fontsFace.css",
-		CssUrl:          utility.Hostname() + "/static/prism.css",
-		Code:            strings.ReplaceAll(tempCode, "\t", "    "),
+		FontsCssUrl:     utility.FontsStaticUrl() + utility.DefaultFontStyle + ".css",
+		CssUrl:          utility.CssStaticUrl() + cssStyle + ".css",
+		Code:            codeContent,
 		BackgroundColor: backgroundColor,
 		ContainerColor:  containerColor,
 		ContainerWidth:  containerWidth,
 		FontSize:        fontSize,
 	}
 
+	data.Validtion()
+
 	w.Write([]byte(templatePage.Parse(data)))
+}
+
+func UploadCode(w http.ResponseWriter, r *http.Request) {
+	var err error
+	receive := map[string]string{}
+
+	if err = json.NewDecoder(r.Body).Decode(&receive); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%s\n", err.Error())
+		return
+	}
+
+	fileName := utility.HashBySha256(receive["code"])
+	filePath := "static/catch/code/" + fileName + ".json"
+	if utility.IsFileOrDirExist(filePath) {
+		w.WriteHeader(http.StatusAccepted)
+		fmt.Fprintln(w, "Code already exist")
+		return
+	}
+
+	var txtFile *os.File
+	if txtFile, err = utility.CreateFile(filePath); err != nil {
+		txtFile.Close()
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%s\n", err.Error())
+		return
+	}
+
+	var jsonByte []byte
+	if jsonByte, err = json.Marshal(receive); err != nil {
+		txtFile.Close()
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%s\n", err.Error())
+		return
+	}
+	if _, err = txtFile.Write(jsonByte); err != nil {
+		txtFile.Close()
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%s\n", err.Error())
+		return
+	}
+
+	txtFile.Close()
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "%v", receive)
 }
