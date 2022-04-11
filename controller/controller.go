@@ -28,6 +28,10 @@ func HomePage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Forwarded for: %s\n", r.Header.Get("X-FORWARDED-FOR"))
 }
 
+func FaviconIco(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/static/favicon.ico", http.StatusSeeOther)
+}
+
 func ShowRawImage(w http.ResponseWriter, r *http.Request) {
 
 	if len(templatePage.Page) == 0 {

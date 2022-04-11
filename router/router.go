@@ -19,6 +19,7 @@ func NewRouter() *mux.Router {
 	)
 
 	mRouter.HandleFunc("/", controller.HomePage).Methods("GET")
+	mRouter.HandleFunc("/favicon.ico", controller.FaviconIco).Methods("GET")
 	mRouter.HandleFunc("/raw/code/image", controller.ShowRawImage).Methods("GET")
 	mRouter.HandleFunc("/test", controller.TestPage).Methods("GET")
 
