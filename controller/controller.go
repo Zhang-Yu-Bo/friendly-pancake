@@ -2,13 +2,13 @@ package controller
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
+	"net/url"
 	"runtime"
 
+	"github.com/Zhang-Yu-Bo/friendly-pancake/model/gasRequest"
 	"github.com/Zhang-Yu-Bo/friendly-pancake/model/templatePage"
 	"github.com/Zhang-Yu-Bo/friendly-pancake/model/utility"
 	wk "github.com/Zhang-Yu-Bo/friendly-pancake/model/wkhtmltoimage"
@@ -44,17 +44,33 @@ func ShowRawImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var err error
-	var statusCode int
-	var pageData templatePage.CodePage
-	if statusCode, err = pageData.GetDataFromURL(r); err != nil {
-		utility.ExternalErrorHandler(w, statusCode, err, utility.QRCode)
+	hashName := utility.GetStringFromURL(r, "code", "")
+	if hashName == "" {
+		mErr := errors.New("there is no parameter [code]")
+		utility.ExternalErrorHandler(w, http.StatusBadRequest, mErr, utility.QRCode)
 		return
 	}
 
+	chCodeContent := make(chan []string)
+	chStatusCode := make(chan int)
+	chError := make(chan error)
+	go func() {
+		tempCodeContent, tempStatusCode, tempErr := gasRequest.GetCodeData(r)
+		chCodeContent <- tempCodeContent
+		chStatusCode <- tempStatusCode
+		chError <- tempErr
+	}()
+
+	var err error
+	var statusCode int
+	var pageData templatePage.CodePage
+	if statusCode, err = pageData.GetStyleFromURL(r); err != nil {
+		utility.ExternalErrorHandler(w, statusCode, err, utility.QRCode)
+		return
+	}
 	pageData.Validtion()
 
-	imgFileName := utility.HashBySha256(pageData.String())
+	imgFileName := utility.HashBySha256(pageData.String() + ", hashName: " + hashName)
 	imgFilePath := "static/catch/img/" + imgFileName + ".png"
 	if utility.IsFileOrDirExist(imgFilePath) {
 		var mImg []byte
@@ -65,6 +81,29 @@ func ShowRawImage(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "image/png")
 		w.WriteHeader(http.StatusOK)
 		w.Write(mImg)
+		return
+	}
+
+	codeContent := <-chCodeContent
+	statusCode = <-chStatusCode
+	err = <-chError
+	if err != nil {
+		utility.ExternalErrorHandler(w, statusCode, err, utility.QRCode)
+		return
+	}
+	if len(codeContent) < 2 {
+		mErr := errors.New("there is no code content")
+		utility.ExternalErrorHandler(w, http.StatusInternalServerError, mErr, utility.QRCode)
+		return
+	}
+
+	var codeContentBytes []byte
+	if codeContentBytes, err = base64.StdEncoding.DecodeString(codeContent[1]); err != nil {
+		utility.ExternalErrorHandler(w, http.StatusInternalServerError, err, utility.QRCode)
+		return
+	}
+	if pageData.Code, err = url.QueryUnescape(string(codeContentBytes)); err != nil {
+		utility.ExternalErrorHandler(w, http.StatusInternalServerError, err, utility.QRCode)
 		return
 	}
 
@@ -106,6 +145,19 @@ func ShowMessagePage(w http.ResponseWriter, r *http.Request) {
 
 func TestPage(w http.ResponseWriter, r *http.Request) {
 
+	// get Code Data From GAS
+	// var err error
+	// var mData []string
+
+	// if mData, err = gasRequest.GetCodeData(r); err != nil {
+	// 	fmt.Fprintf(w, "%s\n", err.Error())
+	// 	return
+	// }
+
+	// for k, v := range mData {
+	// 	fmt.Fprintf(w, "%d %s\n", k, v)
+	// }
+
 	if len(templatePage.Page) == 0 {
 		fmt.Fprintln(w, "Code template is nil")
 		return
@@ -114,7 +166,7 @@ func TestPage(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var statusCode int
 	var pageData templatePage.CodePage
-	if statusCode, err = pageData.GetDataFromURL(r); err != nil {
+	if statusCode, err = pageData.GetStyleFromURL(r); err != nil {
 		utility.ExternalErrorHandler(w, statusCode, err, utility.Json)
 		return
 	}
@@ -124,55 +176,13 @@ func TestPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func UploadCode(w http.ResponseWriter, r *http.Request) {
+	var statusCode int
 	var err error
-	receive := map[string]string{}
 
-	// get code data from request body
-	if err = json.NewDecoder(r.Body).Decode(&receive); err != nil {
-		utility.ExternalErrorHandler(w, http.StatusBadRequest, err, utility.Json)
+	if statusCode, err = gasRequest.UploadCodeData(r); err != nil {
+		utility.ResponesByJson(w, statusCode, err.Error())
 		return
 	}
 
-	// check code data
-	if _, exist := receive["code"]; !exist {
-		mErr := errors.New("bad request, there is no code data in [receive]")
-		utility.ExternalErrorHandler(w, http.StatusBadRequest, mErr, utility.Json)
-		return
-	}
-	if _, err = base64.StdEncoding.DecodeString(receive["code"]); err != nil {
-		mErr := errors.New(err.Error() +
-			". bad request, the formate of the code data is not std base64(RFC 4648)")
-		utility.ExternalErrorHandler(w, http.StatusBadRequest, mErr, utility.Json)
-		return
-	}
-
-	// search file by the hash value of code data
-	fileName := utility.HashBySha256(receive["code"])
-	filePath := "static/catch/code/" + fileName + ".json"
-	if utility.IsFileOrDirExist(filePath) {
-		utility.ResponesByJson(w, http.StatusAccepted, "Code already exist")
-		return
-	}
-
-	// if there is no code file, then create it
-	var txtFile *os.File
-	if txtFile, err = utility.CreateFile(filePath); err != nil {
-		utility.ExternalErrorHandler(w, http.StatusInternalServerError, err, utility.Json)
-		return
-	}
-	defer utility.CloseFile(txtFile)
-
-	// json encode
-	var jsonByte []byte
-	if jsonByte, err = json.Marshal(receive); err != nil {
-		utility.ExternalErrorHandler(w, http.StatusInternalServerError, err, utility.Json)
-		return
-	}
-	// write data in json formate
-	if _, err = txtFile.Write(jsonByte); err != nil {
-		utility.ExternalErrorHandler(w, http.StatusInternalServerError, err, utility.Json)
-		return
-	}
-
-	utility.ResponesByJson(w, http.StatusOK, fileName)
+	utility.ResponesByJson(w, statusCode, "upload code success")
 }

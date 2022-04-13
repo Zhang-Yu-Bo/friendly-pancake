@@ -1,9 +1,6 @@
 package templatePage
 
 import (
-	"encoding/base64"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -56,6 +53,7 @@ func (p CodePage) String() string {
 }
 
 func Parse(data CodePage) string {
+	data.Validtion()
 	tempPage := Page
 	val := reflect.Indirect(reflect.ValueOf(data))
 
@@ -108,38 +106,7 @@ func (data *CodePage) Validtion() {
 	data.Code = strings.ReplaceAll(data.Code, "\t", "    ")
 }
 
-func (data *CodePage) GetDataFromURL(r *http.Request) (int, error) {
-
-	codeFileName := utility.GetStringFromURL(r, "code", "")
-	if codeFileName == "" {
-		return http.StatusBadRequest, errors.New("there is no parameter [code]")
-	}
-	codeFilePath := "static/catch/code/" + codeFileName + ".json"
-	if !utility.IsFileOrDirExist(codeFilePath) {
-		return http.StatusBadRequest, errors.New("there is no code file")
-	}
-
-	var err error
-	var codeFile *os.File
-	if codeFile, err = os.Open(codeFilePath); err != nil {
-		return http.StatusInternalServerError, err
-	}
-	defer utility.CloseFile(codeFile)
-
-	mCode := map[string]string{}
-	if err = json.NewDecoder(codeFile).Decode(&mCode); err != nil {
-		return http.StatusInternalServerError, err
-	}
-	codeContent := mCode["code"]
-	if codeContent == "" {
-		codeContent = utility.DefaultCode
-	}
-
-	var codeContentBytes []byte
-	if codeContentBytes, err = base64.StdEncoding.DecodeString(codeContent); err != nil {
-		return http.StatusInternalServerError, err
-	}
-	codeContent = string(codeContentBytes)
+func (data *CodePage) GetStyleFromURL(r *http.Request) (int, error) {
 
 	backgroundColor := utility.GetStringFromURL(r, "backgroundColor", utility.BackgroundColor)
 	containerColor := utility.GetStringFromURL(r, "containerColor", utility.ContainerColor)
@@ -149,7 +116,6 @@ func (data *CodePage) GetDataFromURL(r *http.Request) (int, error) {
 
 	data.FontsCssUrl = utility.FontsStaticUrl() + utility.DefaultFontStyle + ".css"
 	data.CssUrl = utility.CssStaticUrl() + cssStyle + ".css"
-	data.Code = codeContent
 	data.BackgroundColor = backgroundColor
 	data.ContainerColor = containerColor
 	data.ContainerWidth = containerWidth

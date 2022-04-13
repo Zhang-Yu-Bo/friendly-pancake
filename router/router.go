@@ -17,16 +17,17 @@ func NewRouter() *mux.Router {
 			http.FileServer(http.Dir("static/")),
 		),
 	)
-
 	mRouter.HandleFunc("/", controller.HomePage).Methods("GET")
 	mRouter.HandleFunc("/favicon.ico", controller.FaviconIco).Methods("GET")
+
 	mRouter.HandleFunc("/raw/code/image", controller.ShowRawImage).Methods("GET")
-	mRouter.HandleFunc("/test", controller.TestPage).Methods("GET")
 	mRouter.HandleFunc("/show/error/{message}", controller.ShowMessagePage).Methods("GET")
 
 	mRouter.HandleFunc("/code", controller.UploadCode).Methods("POST")
 	// search code content by code name
 	// get all code content
+
+	mRouter.HandleFunc("/test", controller.TestPage).Methods("GET")
 
 	return mRouter
 }
