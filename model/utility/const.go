@@ -33,6 +33,7 @@ const DefaultCode = `<span class="token macro property"><span class="token direc
 <span class="token punctuation">}</span>`
 
 const (
+	MaxImgNum     = 50
 	MaxCodeLength = 1700
 	GasURL        = "https://script.google.com/macros/s/AKfycbz4qUdDNEzf-Gswd1Nhw3hmYdFiXQRy8bJ6CZymG71FHKdjge7W-drkwLRj81cY54x0ZA/exec"
 )
