@@ -8,12 +8,13 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/Zhang-Yu-Bo/friendly-pancake/model/logger"
 	"github.com/Zhang-Yu-Bo/friendly-pancake/model/utility"
 )
 
 func closeResponse(res *http.Response) {
 	if err := res.Body.Close(); err != nil {
-		utility.InternalErrorHandler(err)
+		logger.ErrorMessage(err)
 	}
 }
 
@@ -66,7 +67,6 @@ func GetCodeData(r *http.Request) ([]string, int, error) {
 }
 
 func UploadCodeData(r *http.Request) (int, error) {
-
 	var err error
 	postParamInJSON := map[string]string{}
 

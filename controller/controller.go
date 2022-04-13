@@ -9,6 +9,7 @@ import (
 	"runtime"
 
 	"github.com/Zhang-Yu-Bo/friendly-pancake/model/gasRequest"
+	"github.com/Zhang-Yu-Bo/friendly-pancake/model/logger"
 	"github.com/Zhang-Yu-Bo/friendly-pancake/model/templatePage"
 	"github.com/Zhang-Yu-Bo/friendly-pancake/model/utility"
 	wk "github.com/Zhang-Yu-Bo/friendly-pancake/model/wkhtmltoimage"
@@ -39,15 +40,17 @@ func FaviconIco(w http.ResponseWriter, r *http.Request) {
 func ShowRawImage(w http.ResponseWriter, r *http.Request) {
 
 	if templatePage.Page == "" {
-		mErr := errors.New("code template is nil")
-		utility.ExternalErrorHandler(w, http.StatusInternalServerError, mErr, utility.QRCode)
+		errMsg := "code template is nil"
+		logger.ErrorMessage(errors.New(errMsg))
+		utility.ResponesByQRCode(w, http.StatusInternalServerError, errMsg)
 		return
 	}
 
 	hashName := utility.GetStringFromURL(r, "code", "")
 	if hashName == "" {
-		mErr := errors.New("there is no parameter [code]")
-		utility.ExternalErrorHandler(w, http.StatusBadRequest, mErr, utility.QRCode)
+		errMsg := "there is no parameter [code]"
+		logger.ErrorMessage(errors.New(errMsg))
+		utility.ResponesByQRCode(w, http.StatusBadRequest, errMsg)
 		return
 	}
 
@@ -65,7 +68,8 @@ func ShowRawImage(w http.ResponseWriter, r *http.Request) {
 	var statusCode int
 	var pageData templatePage.CodePage
 	if statusCode, err = pageData.GetStyleFromURL(r); err != nil {
-		utility.ExternalErrorHandler(w, statusCode, err, utility.QRCode)
+		logger.ErrorMessage(err)
+		utility.ResponesByQRCode(w, statusCode, err.Error())
 		return
 	}
 	pageData.Validtion()
@@ -75,7 +79,8 @@ func ShowRawImage(w http.ResponseWriter, r *http.Request) {
 	if utility.IsFileOrDirExist(imgFilePath) {
 		var mImg []byte
 		if mImg, err = utility.OpenPngAsByte(imgFilePath); err != nil {
-			utility.ExternalErrorHandler(w, http.StatusInternalServerError, err, utility.QRCode)
+			logger.ErrorMessage(err)
+			utility.ResponesByQRCode(w, http.StatusInternalServerError, err.Error())
 			return
 		}
 		w.Header().Set("Content-Type", "image/png")
@@ -88,22 +93,26 @@ func ShowRawImage(w http.ResponseWriter, r *http.Request) {
 	statusCode = <-chStatusCode
 	err = <-chError
 	if err != nil {
-		utility.ExternalErrorHandler(w, statusCode, err, utility.QRCode)
+		logger.ErrorMessage(err)
+		utility.ResponesByQRCode(w, statusCode, err.Error())
 		return
 	}
 	if len(codeContent) < 2 {
-		mErr := errors.New("there is no code content")
-		utility.ExternalErrorHandler(w, http.StatusInternalServerError, mErr, utility.QRCode)
+		errMsg := "there is no code content"
+		logger.ErrorMessage(errors.New(errMsg))
+		utility.ResponesByQRCode(w, http.StatusInternalServerError, errMsg)
 		return
 	}
 
 	var codeContentBytes []byte
 	if codeContentBytes, err = base64.StdEncoding.DecodeString(codeContent[1]); err != nil {
-		utility.ExternalErrorHandler(w, http.StatusInternalServerError, err, utility.QRCode)
+		logger.ErrorMessage(err)
+		utility.ResponesByQRCode(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if pageData.Code, err = url.QueryUnescape(string(codeContentBytes)); err != nil {
-		utility.ExternalErrorHandler(w, http.StatusInternalServerError, err, utility.QRCode)
+		logger.ErrorMessage(err)
+		utility.ResponesByQRCode(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -119,14 +128,15 @@ func ShowRawImage(w http.ResponseWriter, r *http.Request) {
 
 	var htmlToPng []byte
 	if htmlToPng, err = wk.GenerateImage(&htmlToPngOptions); err != nil {
-		utility.ExternalErrorHandler(w, http.StatusInternalServerError, err, utility.QRCode)
+		logger.ErrorMessage(err)
+		utility.ResponesByQRCode(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	w.Header().Set("Content-Type", "image/png")
 	w.WriteHeader(http.StatusOK)
 	w.Write(htmlToPng)
 	if err = utility.SaveBytesAsPng(imgFilePath, htmlToPng); err != nil {
-		utility.InternalErrorHandler(err)
+		logger.ErrorMessage(err)
 	}
 }
 
@@ -145,32 +155,56 @@ func ShowMessagePage(w http.ResponseWriter, r *http.Request) {
 
 func TestPage(w http.ResponseWriter, r *http.Request) {
 
-	// get Code Data From GAS
-	// var err error
-	// var mData []string
-
-	// if mData, err = gasRequest.GetCodeData(r); err != nil {
-	// 	fmt.Fprintf(w, "%s\n", err.Error())
-	// 	return
-	// }
-
-	// for k, v := range mData {
-	// 	fmt.Fprintf(w, "%d %s\n", k, v)
-	// }
-
 	if len(templatePage.Page) == 0 {
 		fmt.Fprintln(w, "Code template is nil")
 		return
 	}
 
+	chCodeContent := make(chan []string)
+	chStatusCode := make(chan int)
+	chError := make(chan error)
+	go func() {
+		tempCodeContent, tempStatusCode, tempErr := gasRequest.GetCodeData(r)
+		chCodeContent <- tempCodeContent
+		chStatusCode <- tempStatusCode
+		chError <- tempErr
+	}()
+
 	var err error
 	var statusCode int
 	var pageData templatePage.CodePage
 	if statusCode, err = pageData.GetStyleFromURL(r); err != nil {
-		utility.ExternalErrorHandler(w, statusCode, err, utility.Json)
+		logger.ErrorMessage(err)
+		utility.ResponesByPage(w, r, statusCode, err.Error())
 		return
 	}
-	pageData.Validtion()
+
+	codeContent := <-chCodeContent
+	statusCode = <-chStatusCode
+	err = <-chError
+	if err != nil {
+		logger.ErrorMessage(err)
+		utility.ResponesByPage(w, r, statusCode, err.Error())
+		return
+	}
+	if len(codeContent) < 2 {
+		errMsg := "there is no code content"
+		logger.ErrorMessage(errors.New(errMsg))
+		utility.ResponesByPage(w, r, http.StatusInternalServerError, errMsg)
+		return
+	}
+
+	var codeContentBytes []byte
+	if codeContentBytes, err = base64.StdEncoding.DecodeString(codeContent[1]); err != nil {
+		logger.ErrorMessage(err)
+		utility.ResponesByPage(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if pageData.Code, err = url.QueryUnescape(string(codeContentBytes)); err != nil {
+		logger.ErrorMessage(err)
+		utility.ResponesByPage(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
 
 	w.Write([]byte(templatePage.Parse(pageData)))
 }
@@ -180,9 +214,9 @@ func UploadCode(w http.ResponseWriter, r *http.Request) {
 	var err error
 
 	if statusCode, err = gasRequest.UploadCodeData(r); err != nil {
-		utility.ResponesByJson(w, statusCode, err.Error())
+		utility.ResponesByJSON(w, statusCode, err.Error())
 		return
 	}
 
-	utility.ResponesByJson(w, statusCode, "upload code success")
+	utility.ResponesByJSON(w, statusCode, "upload code success")
 }

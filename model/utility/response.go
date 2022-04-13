@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/Zhang-Yu-Bo/friendly-pancake/model/logger"
 	"github.com/skip2/go-qrcode"
 )
 
@@ -22,18 +23,18 @@ var GolangImg []byte
 func init() {
 	var err error
 	if GolangImg, err = os.ReadFile("static/golang.jpg"); err != nil {
-		InternalErrorHandler(err)
+		logger.ErrorMessage(err)
 		GolangImg = make([]byte, 0, 1)
 		return
 	}
 }
 
-func ResponesByJson(w http.ResponseWriter, statusCode int, message string) {
+func ResponesByJSON(w http.ResponseWriter, statusCode int, message string) {
 	mapMessage := map[string]string{}
 	mapMessage["message"] = message
 	byteMessage, err := json.Marshal(mapMessage)
 	if err != nil {
-		InternalErrorHandler(err)
+		logger.ErrorMessage(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
 		return
@@ -43,17 +44,9 @@ func ResponesByJson(w http.ResponseWriter, statusCode int, message string) {
 }
 
 func ResponesByQRCode(w http.ResponseWriter, statusCode int, message string) {
-	base64Msg := base64.URLEncoding.EncodeToString([]byte(message))
-	mUrl := Hostname() + "/show"
-	if statusCode >= 400 {
-		mUrl += "/error/"
-	} else {
-		mUrl += "/msg/"
-	}
-
-	qImg, err := qrcode.Encode(mUrl+base64Msg, qrcode.Medium, 256)
+	qImg, err := qrcode.Encode(getMsgPageURL(statusCode, message), qrcode.Medium, 256)
 	if err != nil {
-		InternalErrorHandler(err)
+		logger.ErrorMessage(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write(GolangImg)
 		return
@@ -62,6 +55,17 @@ func ResponesByQRCode(w http.ResponseWriter, statusCode int, message string) {
 	w.Write(qImg)
 }
 
-func ResponesByPage(w http.ResponseWriter, statusCode int, message string) {
+func ResponesByPage(w http.ResponseWriter, r *http.Request, statusCode int, message string) {
+	http.Redirect(w, r, getMsgPageURL(statusCode, message), http.StatusSeeOther)
+}
 
+func getMsgPageURL(statusCode int, message string) string {
+	base64Msg := base64.URLEncoding.EncodeToString([]byte(message))
+	mUrl := Hostname() + "/show"
+	if statusCode >= 400 {
+		mUrl += "/error/"
+	} else {
+		mUrl += "/msg/"
+	}
+	return mUrl + base64Msg
 }

@@ -14,6 +14,8 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+
+	"github.com/Zhang-Yu-Bo/friendly-pancake/model/logger"
 )
 
 func Hostname() string {
@@ -123,8 +125,8 @@ func SaveBytesAsPng(filePath string, data []byte) error {
 
 func CloseFile(mFile *os.File) {
 	if err := mFile.Close(); err != nil {
-		InternalErrorHandler(err)
+		logger.ErrorMessage(err)
 	} else {
-		fmt.Println(mFile.Name() + " is closed.")
+		logger.LogMessage(mFile.Name() + " is closed.")
 	}
 }

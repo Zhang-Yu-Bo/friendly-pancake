@@ -1,4 +1,4 @@
-package utility
+package logger
 
 import (
 	"fmt"
@@ -7,5 +7,10 @@ import (
 
 func LogMessage(message string) {
 	message = fmt.Sprintf("[Log][%s]: %s", time.Now(), message)
+	fmt.Println(message)
+}
+
+func ErrorMessage(err error) {
+	message := fmt.Sprintf("[Error][%s]: %s", time.Now(), err.Error())
 	fmt.Println(message)
 }
