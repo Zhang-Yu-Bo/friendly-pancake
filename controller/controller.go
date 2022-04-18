@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"runtime"
 
 	"github.com/Zhang-Yu-Bo/friendly-pancake/model/gasRequest"
@@ -103,19 +102,7 @@ func ShowRawImage(w http.ResponseWriter, r *http.Request) {
 		utility.ResponesByQRCode(w, http.StatusInternalServerError, errMsg)
 		return
 	}
-
-	// TODO: 不用特別 base 64 url encode
-	var codeContentBytes []byte
-	if codeContentBytes, err = base64.StdEncoding.DecodeString(codeContent[1]); err != nil {
-		logger.ErrorMessage(err)
-		utility.ResponesByQRCode(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	if pageData.Code, err = url.QueryUnescape(string(codeContentBytes)); err != nil {
-		logger.ErrorMessage(err)
-		utility.ResponesByQRCode(w, http.StatusInternalServerError, err.Error())
-		return
-	}
+	pageData.Code = codeContent[1]
 
 	html := templatePage.Parse(pageData)
 
@@ -194,30 +181,21 @@ func TestPage(w http.ResponseWriter, r *http.Request) {
 		utility.ResponesByPage(w, r, http.StatusInternalServerError, errMsg)
 		return
 	}
-
-	var codeContentBytes []byte
-	if codeContentBytes, err = base64.StdEncoding.DecodeString(codeContent[1]); err != nil {
-		logger.ErrorMessage(err)
-		utility.ResponesByPage(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-	if pageData.Code, err = url.QueryUnescape(string(codeContentBytes)); err != nil {
-		logger.ErrorMessage(err)
-		utility.ResponesByPage(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
+	pageData.Code = codeContent[1]
 
 	w.Write([]byte(templatePage.Parse(pageData)))
 }
 
 func UploadCode(w http.ResponseWriter, r *http.Request) {
 	var statusCode int
+	var hashName string
 	var err error
 
-	if statusCode, err = gasRequest.UploadCodeData(r); err != nil {
+	if statusCode, hashName, err = gasRequest.UploadCodeData(r); err != nil {
+		logger.ErrorMessage(err)
 		utility.ResponesByJSON(w, statusCode, err.Error())
 		return
 	}
 
-	utility.ResponesByJSON(w, statusCode, "upload code success")
+	utility.ResponesByJSON(w, statusCode, hashName)
 }

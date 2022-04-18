@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 
 	"github.com/Zhang-Yu-Bo/friendly-pancake/model/logger"
@@ -67,23 +68,25 @@ func GetCodeData(r *http.Request) ([]string, int, error) {
 	return resultInStrSlice, http.StatusOK, nil
 }
 
-func UploadCodeData(r *http.Request) (int, error) {
+func UploadCodeData(r *http.Request) (int, string, error) {
 	var err error
 	postParamInJSON := map[string]string{}
 
 	if err = json.NewDecoder(r.Body).Decode(&postParamInJSON); err != nil {
-		return http.StatusBadRequest, err
+		return http.StatusBadRequest, "", err
 	}
 
 	var languageParam, codeContentParam, hashNameParam string
 	var exist bool
 	if codeContentParam, exist = postParamInJSON["code_content"]; !exist {
-		return http.StatusBadRequest, errors.New("there is no parameter [code_content]")
+		return http.StatusBadRequest, "", errors.New("there is no parameter [code_content]")
+	}
+	if err = isCodeContentValid(codeContentParam); err != nil {
+		return http.StatusBadRequest, "", err
 	}
 	languageParam = postParamInJSON["code_language"]
 	hashNameParam = utility.HashBySha256(codeContentParam)
 
-	// code 長度沒有被驗證不太好, 驗證行數
 	postToGasData := url.Values{
 		"hash_name":     {hashNameParam},
 		"code_content":  {codeContentParam},
@@ -91,24 +94,36 @@ func UploadCodeData(r *http.Request) (int, error) {
 	}
 	var res *http.Response
 	if res, err = http.PostForm(utility.GetGasUrl(), postToGasData); err != nil {
-		return http.StatusInternalServerError, err
+		return http.StatusInternalServerError, "", err
 	}
 
 	defer closeResponse(res)
 
 	resultInJSON := map[string]string{}
 	if err = json.NewDecoder(res.Body).Decode(&resultInJSON); err != nil {
-		return http.StatusInternalServerError, err
+		return http.StatusInternalServerError, "", err
 	}
 
 	var resultMsg string
 	if resultMsg, exist = resultInJSON["message"]; !exist {
-		return http.StatusInternalServerError, errors.New("upload code failed, there is no message return")
+		return http.StatusInternalServerError, "", errors.New("upload code failed, there is no message return")
 	}
 	if strings.Contains(resultMsg, "no parameter") ||
 		strings.Contains(resultMsg, "failed") {
-		return http.StatusInternalServerError, errors.New(resultMsg)
+		return http.StatusInternalServerError, "", errors.New(resultMsg)
 	}
 
-	return http.StatusOK, nil
+	return http.StatusOK, hashNameParam, nil
+}
+
+func isCodeContentValid(codeContent string) error {
+	if numOfNewLines := strings.Count(codeContent, "\n"); numOfNewLines > utility.MaxCodeLines {
+		return errors.New("too many lines")
+	}
+	codeReg := regexp.MustCompile("(<span class=\"token[a-zA-Z0-9-_ ]*\">)|(</span>)")
+	codeText := codeReg.ReplaceAllString(codeContent, "")
+	if len(codeText) > utility.MaxCodeLength {
+		return errors.New("too many text")
+	}
+	return nil
 }
