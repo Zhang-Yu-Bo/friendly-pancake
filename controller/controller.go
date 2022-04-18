@@ -104,6 +104,7 @@ func ShowRawImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// TODO: 不用特別 base 64 url encode
 	var codeContentBytes []byte
 	if codeContentBytes, err = base64.StdEncoding.DecodeString(codeContent[1]); err != nil {
 		logger.ErrorMessage(err)

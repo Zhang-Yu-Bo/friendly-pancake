@@ -11,34 +11,11 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 
 	"github.com/Zhang-Yu-Bo/friendly-pancake/model/logger"
 )
-
-func Hostname() string {
-	if runtime.GOOS == "linux" {
-		return "https://friendly-pancake.herokuapp.com"
-	}
-	return "http://localhost"
-}
-
-func CssStaticUrl() string {
-	return Hostname() + "/static/css/"
-}
-
-func FontsStaticUrl() string {
-	return Hostname() + "/static/fonts/"
-}
-
-func BinPath() string {
-	if runtime.GOOS == "linux" {
-		return "./bin/wkhtmltoimage"
-	}
-	return "C:\\Users\\Lykoi\\Desktop\\html2image-master\\wkhtmltopdf\\bin\\wkhtmltoimage.exe"
-}
 
 func IsFileOrDirExist(path string) bool {
 	_, err := os.Stat(path)
@@ -104,7 +81,6 @@ func OpenPngAsByte(filePath string) ([]byte, error) {
 }
 
 func SaveBytesAsPng(filePath string, data []byte) error {
-	// TODO: 確認路徑中是否有超過數量的 img
 	var err error
 	var imgFile *os.File
 	var mImg image.Image

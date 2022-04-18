@@ -18,6 +18,7 @@ func closeResponse(res *http.Response) {
 	}
 }
 
+// TODO: 可以在本地 memory中緩存 code data，就不用換個 style也要等太久
 func GetCodeData(r *http.Request) ([]string, int, error) {
 	var err error
 	var req *http.Request
@@ -28,7 +29,7 @@ func GetCodeData(r *http.Request) ([]string, int, error) {
 		return nil, http.StatusBadRequest, errors.New("there is no parameter [code]")
 	}
 
-	mURL := fmt.Sprintf(utility.GasURL+"?hash_name=%s", hashName)
+	mURL := fmt.Sprintf(utility.GetGasUrl()+"?hash_name=%s", hashName)
 	if req, err = http.NewRequest("GET", mURL, nil); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
@@ -82,13 +83,14 @@ func UploadCodeData(r *http.Request) (int, error) {
 	languageParam = postParamInJSON["code_language"]
 	hashNameParam = utility.HashBySha256(codeContentParam)
 
+	// code 長度沒有被驗證不太好, 驗證行數
 	postToGasData := url.Values{
 		"hash_name":     {hashNameParam},
 		"code_content":  {codeContentParam},
 		"code_language": {languageParam},
 	}
 	var res *http.Response
-	if res, err = http.PostForm(utility.GasURL, postToGasData); err != nil {
+	if res, err = http.PostForm(utility.GetGasUrl(), postToGasData); err != nil {
 		return http.StatusInternalServerError, err
 	}
 
