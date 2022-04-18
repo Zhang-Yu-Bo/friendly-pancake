@@ -23,9 +23,9 @@ func NewRouter() *mux.Router {
 	mRouter.HandleFunc("/raw/code/image", controller.ShowRawImage).Methods("GET")
 	mRouter.HandleFunc("/show/error/{message}", controller.ShowMessagePage).Methods("GET")
 
+	mRouter.HandleFunc("/code", controller.ShowCodeContent).Methods("GET")
 	mRouter.HandleFunc("/code", controller.UploadCode).Methods("POST")
-	// search code content by code name
-	// get all code content
+	// middle ware to prevent ddos attack
 
 	mRouter.HandleFunc("/test", controller.TestPage).Methods("GET")
 

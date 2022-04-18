@@ -29,7 +29,7 @@ func init() {
 	}
 }
 
-func ResponesByJSON(w http.ResponseWriter, statusCode int, message string) {
+func ResponseByJSON(w http.ResponseWriter, statusCode int, message string) {
 	mapMessage := map[string]string{}
 	mapMessage["message"] = message
 	byteMessage, err := json.Marshal(mapMessage)
@@ -43,7 +43,7 @@ func ResponesByJSON(w http.ResponseWriter, statusCode int, message string) {
 	w.Write(byteMessage)
 }
 
-func ResponesByQRCode(w http.ResponseWriter, statusCode int, message string) {
+func ResponseByQRCode(w http.ResponseWriter, statusCode int, message string) {
 	qImg, err := qrcode.Encode(getMsgPageURL(statusCode, message), qrcode.Medium, 256)
 	if err != nil {
 		logger.ErrorMessage(err)
@@ -55,7 +55,7 @@ func ResponesByQRCode(w http.ResponseWriter, statusCode int, message string) {
 	w.Write(qImg)
 }
 
-func ResponesByPage(w http.ResponseWriter, r *http.Request, statusCode int, message string) {
+func ResponseByPage(w http.ResponseWriter, r *http.Request, statusCode int, message string) {
 	http.Redirect(w, r, getMsgPageURL(statusCode, message), http.StatusSeeOther)
 }
 
