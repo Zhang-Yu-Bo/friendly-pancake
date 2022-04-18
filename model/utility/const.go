@@ -25,9 +25,10 @@ const (
 )
 
 const (
-	MaxImgNum     = 50
-	MaxCodeLength = 2000
-	MaxCodeLines  = 50
+	MaxLocalCatchOfImg  = 50
+	MaxCodeLength       = 2000
+	MaxCodeLines        = 50
+	MaxLocalCatchOfCode = 50
 )
 
 func Hostname() string {

@@ -89,7 +89,7 @@ func SaveBytesAsPng(filePath string, data []byte) error {
 	if fileInDir, err = filepath.Glob(filepath.Dir(filePath) + "/*.*"); err != nil {
 		return err
 	}
-	if len(fileInDir) >= MaxImgNum {
+	if len(fileInDir) >= MaxLocalCatchOfImg {
 		if err = os.RemoveAll(filepath.Dir(filePath)); err != nil {
 			return err
 		}

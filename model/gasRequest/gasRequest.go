@@ -13,13 +13,48 @@ import (
 	"github.com/Zhang-Yu-Bo/friendly-pancake/model/utility"
 )
 
+// map[ hashName ] codeContent
+var codeContentCatch map[string]string
+
+func init() {
+	codeContentCatch = make(map[string]string)
+}
+
 func closeResponse(res *http.Response) {
 	if err := res.Body.Close(); err != nil {
 		logger.ErrorMessage(err)
 	}
 }
 
-// TODO: 可以在本地 memory中緩存 code data，就不用換個 style也要等太久
+func getCodeContentInLocal(hashName string) string {
+	if result, exist := codeContentCatch[hashName]; exist {
+		return result
+	}
+	return ""
+}
+
+func setCodeContentInLocal(hashName, codeContent string) {
+	if _, exist := codeContentCatch[hashName]; exist {
+		return
+	}
+	if len(codeContent) >= utility.MaxLocalCatchOfCode {
+		codeContentCatch = make(map[string]string)
+	}
+	codeContentCatch[hashName] = codeContent
+}
+
+func isCodeContentValid(codeContent string) error {
+	if numOfNewLines := strings.Count(codeContent, "\n"); numOfNewLines > utility.MaxCodeLines {
+		return errors.New("too many lines")
+	}
+	codeReg := regexp.MustCompile("(<span class=\"token[a-zA-Z0-9-_ ]*\">)|(</span>)")
+	codeText := codeReg.ReplaceAllString(codeContent, "")
+	if len(codeText) > utility.MaxCodeLength {
+		return errors.New("too many text")
+	}
+	return nil
+}
+
 func GetCodeData(r *http.Request) ([]string, int, error) {
 	var err error
 	var req *http.Request
@@ -28,6 +63,10 @@ func GetCodeData(r *http.Request) ([]string, int, error) {
 	hashName := utility.GetStringFromURL(r, "code", "")
 	if hashName == "" {
 		return nil, http.StatusBadRequest, errors.New("there is no parameter [code]")
+	}
+
+	if localCodeContent := getCodeContentInLocal(hashName); localCodeContent != "" {
+		return []string{hashName, localCodeContent}, http.StatusOK, nil
 	}
 
 	mURL := fmt.Sprintf(utility.GetGasUrl()+"?hash_name=%s", hashName)
@@ -64,6 +103,8 @@ func GetCodeData(r *http.Request) ([]string, int, error) {
 		}
 		resultInStrSlice = append(resultInStrSlice, vStr)
 	}
+
+	setCodeContentInLocal(hashName, resultInStrSlice[1])
 
 	return resultInStrSlice, http.StatusOK, nil
 }
@@ -113,17 +154,7 @@ func UploadCodeData(r *http.Request) (int, string, error) {
 		return http.StatusInternalServerError, "", errors.New(resultMsg)
 	}
 
-	return http.StatusOK, hashNameParam, nil
-}
+	setCodeContentInLocal(hashNameParam, codeContentParam)
 
-func isCodeContentValid(codeContent string) error {
-	if numOfNewLines := strings.Count(codeContent, "\n"); numOfNewLines > utility.MaxCodeLines {
-		return errors.New("too many lines")
-	}
-	codeReg := regexp.MustCompile("(<span class=\"token[a-zA-Z0-9-_ ]*\">)|(</span>)")
-	codeText := codeReg.ReplaceAllString(codeContent, "")
-	if len(codeText) > utility.MaxCodeLength {
-		return errors.New("too many text")
-	}
-	return nil
+	return http.StatusOK, hashNameParam, nil
 }
