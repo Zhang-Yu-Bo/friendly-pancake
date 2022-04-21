@@ -54,8 +54,15 @@ async function setConfigData() {
 			const res = await getCodeContent(codeTextFromURL);
 			const result = await res.json();
 			if (res.ok) {
+				// TODO: 移除行號
 				let mRegex = /(<span class=\"token[a-zA-Z0-9-_ ]*\">)|(<\/span>)/ig
 				elementList.mCodeText.value = result.message.replaceAll(mRegex, "");
+				let eraseLineNumber = [];
+				let mLineNumber = /[0-9]+\t/ig
+				elementList.mCodeText.value.split("\n").map(it => {
+					eraseLineNumber.push(it.replace(mLineNumber, ""))
+				});
+				elementList.mCodeText.value = eraseLineNumber.join("\n");
 			} else {
 				codeTextFromURL = null;
 			}
@@ -87,12 +94,12 @@ function hightlightCodeText() {
 
 	// add line number for last render
 	let counterOfLines = 1;
-	let addCodeLineNumberText = "";
+	let addCodeLineNumberText = [];
 	elementList.mCode.innerHTML.split("\n").map(it => {
-		addCodeLineNumberText += '<span class="token comment">' + counterOfLines.toString() + '</span>\t' + it + '\n';
+		addCodeLineNumberText.push("<span class=\"token comment\">" + counterOfLines.toString() + "</span>\t" + it);
 		counterOfLines++;
 	});
-	elementList.mCode.innerHTML = addCodeLineNumberText;
+	elementList.mCode.innerHTML = addCodeLineNumberText.join("\n");
 }
 
 // ====================windows on resize====================
