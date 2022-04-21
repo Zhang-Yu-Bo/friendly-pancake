@@ -84,14 +84,23 @@ function hightlightCodeText() {
 	Prism.highlightElement(elementList.mCode);
 	elementList.mPre.className = "";
 	elementList.mCode.className = "";
+
+	// add line number for last render
+	let counterOfLines = 1;
+	let addCodeLineNumberText = "";
+	elementList.mCode.innerHTML.split("\n").map(it => {
+		addCodeLineNumberText += '<span class="token comment">' + counterOfLines.toString() + '</span>\t' + it + '\n';
+		counterOfLines++;
+	});
+	elementList.mCode.innerHTML = addCodeLineNumberText;
 }
 
 // ====================windows on resize====================
-window.addEventListener("resize", () => {
-	const newContainerWidth = parseInt(0.52356 * window.screen.availWidth + 36);
-	elementList.containerWidthInput.value = newContainerWidth;
-	elementList.mContainer.style.width = newContainerWidth + "px";
-});
+// window.addEventListener("resize", () => {
+// 	const newContainerWidth = parseInt(0.52356 * window.screen.availWidth + 36);
+// 	elementList.containerWidthInput.value = newContainerWidth;
+// 	elementList.mContainer.style.width = newContainerWidth + "px";
+// });
 // ====================windows on resize====================
 
 // ====================color picker, on color change====================
@@ -172,9 +181,27 @@ elementList.cleanCatchBtn.addEventListener("click", async () => {
 	localStorage.clear();
 	await setConfigData();
 	hightlightCodeText();
-})
+});
 // ====================clean catch button, on click====================
 
+// ====================click for copy====================
+[...document.getElementsByClassName('mCopyButton')].map(it => {
+	it.addEventListener("click", () => {
+		let beforeCopy = it.children[0];
+		let afterCopy = it.children[1];
+		beforeCopy.className = common.HideElement(beforeCopy.className);
+		afterCopy.className = common.ShowElement(afterCopy.className);
+		let copyValue = elementList[it.getAttribute('mTarget')].innerHTML;
+		navigator.clipboard.writeText(copyValue);
+		setTimeout(()=>{
+			beforeCopy.className = common.ShowElement(beforeCopy.className);
+			afterCopy.className = common.HideElement(afterCopy.className);
+		}, 500);
+	})
+});
+// ====================click for copy====================
+
+// ====================generate image button, on click====================
 elementList.generateImageBtn.addEventListener("click", async () => {
 	hightlightCodeText();
 	elementList.modalLoadingSpinner.className = common.ShowElement(
@@ -191,11 +218,9 @@ elementList.generateImageBtn.addEventListener("click", async () => {
 		"code_language": "language-" + elementList.codeLangSelectpicker.value,
 		"code_content": elementList.mCode.innerHTML,
 	};
-	// console.log(JSON.stringify(uploadData));
 
 	try{
 		const res = await uploadCode(uploadData);
-		// const res = await uploadCode(JSON.stringify(uploadData));
 		const result = await res.json();
 		if (res.ok) {
 			elementList.modalResultSuccess.className = common.ShowElement(
@@ -220,12 +245,13 @@ elementList.generateImageBtn.addEventListener("click", async () => {
 			elementList.modalResultFailed.className = common.ShowElement(
 				elementList.modalResultFailed.className
 			);
-			console.log("not ok");
+			elementList.resutlErrorText.innerHTML = result.message;
 		}
 	}catch(error){
 		elementList.modalResultFailed.className = common.ShowElement(
 			elementList.modalResultFailed.className
 		);
+		elementList.resutlErrorText.innerHTML = error;
 		console.log(error);
 	}
 
@@ -234,6 +260,7 @@ elementList.generateImageBtn.addEventListener("click", async () => {
 	);
 	$("#resultModal").modal("handleUpdate");
 });
+// ====================generate image button, on click====================
 
 async function uploadCode(uploadData) {
 	let mHeaders = new Headers();

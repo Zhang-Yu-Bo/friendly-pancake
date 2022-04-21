@@ -11,6 +11,7 @@
 }
 
 @font-face {
+    /* https://www.wfublog.com/2015/06/icon-font-unicode-special-character.html#section2 */
     font-family: SegoeUISymbol;
     src: url(SegoeUISymbolRegular.ttf),
     local("Segoe UI Symbol");
