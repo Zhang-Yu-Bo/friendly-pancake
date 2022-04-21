@@ -1,0 +1,17 @@
+@font-face {
+    font-family: JetBrainsMono;
+    src: url(JetBrainsMono-Regular.ttf);
+    font-variant: normal;
+}
+
+@font-face {
+    font-family: JfOpenHuninn;
+    src: url(jf-openhuninn-1.1.ttf),
+    local("jf open 粉圓 1.1");
+}
+
+@font-face {
+    font-family: SegoeUISymbol;
+    src: url(SegoeUISymbolRegular.ttf),
+    local("Segoe UI Symbol");
+}

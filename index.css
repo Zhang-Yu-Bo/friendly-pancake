@@ -1,0 +1,59 @@
+
+.mBorder {
+    border: 3px solid wheat;
+    border-radius: 10px;
+}
+
+.mBackground {
+    padding: 5%;
+    background-color: #2885D3;
+}
+
+.mContainer {
+    position: relative;
+    /* top: 50%; */
+    left: 50%;
+    transform: translateX(-50%);
+    /* transform: translate(-50%, -50%); */
+    background-color: #151718;
+    /* background-color: #2d2d2d; */
+    /* background-color: #282c34; */
+    border-radius: 10px;
+    max-width: 992px;
+    /* min-height: 300px; */
+    padding: 12px;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+    word-break: break-word;
+}
+.button {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 5px;
+    display: inline-block;
+}
+.title-bar {
+    padding-left: 6px;
+}
+.code-content {
+    font-size: 18px;
+    padding: 18px;
+}
+
+/* https://www.html.cn/archives/2422 */
+code, pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-family: JetBrainsMono,JfOpenHuninn,Consolas,monospace,SegoeUISymbol;
+    font-size: 18px;
+    margin: auto;
+    line-height:1.5;
+    -moz-tab-size:4;
+    -o-tab-size:4;
+    tab-size:4;
+}
+
+p {
+    font-family: JetBrainsMono,JfOpenHuninn,Consolas,monospace,SegoeUISymbol;
+    font-size: 12px;
+}
