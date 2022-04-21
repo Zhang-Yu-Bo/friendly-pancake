@@ -9,3 +9,9 @@
     src: url(/static/fonts/jf-openhuninn-1.1.ttf),
     local("jf open 粉圓 1.1");
 }
+
+@font-face {
+    font-family: SegoeUISymbol;
+    src: url(/static/fonts/SegoeUISymbolRegular.ttf),
+    local("Segoe UI Symbol");
+}
