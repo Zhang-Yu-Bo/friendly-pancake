@@ -79,7 +79,7 @@ function hightlightCodeText() {
 	elementList.mCodeStyle.href = constants.CodeStyleMap[elementList.cssStyleSelector.value];
 	elementList.mCode.style.fontSize = elementList.fontSizeInput.value.toString() + "px";
 	elementList.mContainer.style.width = elementList.containerWidthInput.value.toString() + "px";
-	elementList.mCode.innerHTML = elementList.mCodeText.value;
+	elementList.mCode.innerHTML = elementList.mCodeText.value.replaceAll("<", "&lt;");
 	elementList.mCode.className = "language-" + elementList.codeLangSelectpicker.value;
 	Prism.highlightElement(elementList.mCode);
 	elementList.mPre.className = "";
