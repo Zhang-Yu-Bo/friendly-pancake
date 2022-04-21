@@ -32,8 +32,8 @@ const (
 )
 
 func Hostname() string {
-	if runtime.GOOS == "linux" {
-		return "https://friendly-pancake.herokuapp.com"
+	if os.Getenv("HOST_URL") != "" {
+		return os.Getenv("HOST_URL")
 	}
 	return "http://localhost"
 }
@@ -55,8 +55,12 @@ func GetGasUrl() string {
 }
 
 func BinPath() string {
+	if os.Getenv("BIN_PATH") != "" {
+		return os.Getenv("BIN_PATH")
+	}
 	if runtime.GOOS == "linux" {
 		return "./bin/wkhtmltoimage"
 	}
-	return "C:\\Users\\Lykoi\\Desktop\\html2image-master\\wkhtmltopdf\\bin\\wkhtmltoimage.exe"
+	// runtime.GOOS == windows
+	return "./bin/wkhtmltoimage.exe"
 }
