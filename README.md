@@ -1,2 +1,2 @@
 # friendly-pancake
-heroku backend
+heroku frontend
